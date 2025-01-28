@@ -101,9 +101,9 @@
           </div>
 
           <!-- Filters Group -->
-          <div class="flex flex-col flex-wrap sm:flex-row gap-4 flex-grow">
+          <div class="flex flex-col flex-wrap gap-4 flex-grow">
             <!-- Tax Type Select -->
-            <span class="flex justify-between flex-wrap gap-2">
+            <span class="flex justify-center flex-wrap gap-2">
               <select
                 v-model="filters.taxType"
                 @change="applyFilters"

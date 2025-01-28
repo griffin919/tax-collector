@@ -24,7 +24,7 @@
       <form @submit.prevent="handleLogin" class="space-y-6">
         <div>
           <!-- Username Input -->
-          <div class="mb-7">
+          <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Username
             </label>
@@ -38,10 +38,11 @@
           </div>
           
           <!-- PIN Input -->
-          <div class="flex justify-center space-x-4 mb-7">
+          <div class="space-x-4 mb-10">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Passcode
             </label>
+            <span class="flex justify-end space-x-8">
             <input
               v-for="(digit, index) in 4"
               :key="index"
@@ -55,6 +56,7 @@
               autocomplete="off"
               required
             />
+          </span>
           </div>
         </div>
 
