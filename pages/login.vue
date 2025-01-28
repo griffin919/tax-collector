@@ -4,7 +4,7 @@
   >
     <div class="flex items-center">
       <Icon name="lucide:heart-handshake" class="h-6 w-6 text-blue-500 pr-3" />
-      <span class="text-2xl font-bold text-gray-800">Municipal Tax</span>
+      <span class="text-2xl font-bold text-gray-800">RevGh</span>
     </div>
     
     <div class="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">

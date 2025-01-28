@@ -121,7 +121,7 @@ const formatCurrency = (amount) => {
     const currentYear = new Date().getFullYear();
     
     // Process logo if provided
-    const logoImage = logoUrl ? await processImage(logoUrl, 100) : new Uint8Array(0);
+    const logoImage = logoUrl ? await processImage(logoUrl, 150) : new Uint8Array(0);
 
     
     // Create receipt arrays combining commands and text

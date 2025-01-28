@@ -40,18 +40,22 @@ export const useRealtimeDB = () => {
     const fetchDonationsByFilter = async (userId, filters) => {
         console.log("🚀 ~ fetchDonationsByFilter ~ filters:", filters)
         if (!userId) throw new Error('User ID is required');
-
+    
+        let collector_name = filters.collector_name?.value;
+        let taxType = filters.taxType?.value;
+        console.log("🚀 ~ fetchDonationsByFilter ~ collector_name:", collector_name, taxType)
+    
         isLoading.value = true;
         error.value = null;
-
+    
         try {
             const donationsRef = dbRef($database, `donations/${userId}`);
             const snapshot = await get(donationsRef);
-
+    
             if (!snapshot.exists()) {
                 return [];
             }
-
+    
             // Convert snapshot to array and add ID to each donation
             let donationsArray = [];
             snapshot.forEach((childSnapshot) => {
@@ -64,7 +68,7 @@ export const useRealtimeDB = () => {
                     collector_name: typeof donation.collector_name === 'object' ? donation.collector_name : donation.collector_name
                 });
             });
-
+    
             console.log("🚀 ~ fetchDonationsByFilter ~ donationsArray:", donationsArray)
             // Apply filters if they exist
             return donationsArray.filter(donation => {
@@ -73,41 +77,39 @@ export const useRealtimeDB = () => {
                     const donationDate = new Date(donation.date);
                     const startDate = new Date(filters.startDate);
                     const endDate = new Date(filters.endDate);
-
+    
                     // Normalize dates for comparison
                     donationDate.setHours(0, 0, 0, 0);
                     startDate.setHours(0, 0, 0, 0);
                     endDate.setHours(23, 59, 59, 999);
-
+    
                     if (!(donationDate >= startDate && donationDate <= endDate)) {
                         return false;
                     }
                 }
-
+    
                 // Collector name filter
-                if (filters.collector_name?.value) {
-                    const filterCollector = filters.collector_name.value.toLowerCase();
-                    const donationCollector = donation.collector_name.toLowerCase() || '';
-
+                if (collector_name) {
+                    const filterCollector = collector_name.toLowerCase();
+                    const donationCollector = donation.collector_name ? donation.collector_name.toLowerCase() : '';
                     if (filterCollector && donationCollector !== filterCollector) {
                         return false;
                     }
                 }
-
+    
                 // Tax type filter
-                if (filters.taxType?.value) {
-                    const filterTaxType = filters.taxType?.value.toLowerCase();
-                    console.log("🚀 ~ fetchDonationsByFilter ~ filters.taxType?.value:", filters.taxType?.value)
-                    const donationTaxType = donation.taxType.toLowerCase() || '';
-
+                if (taxType) {
+                    const filterTaxType = taxType.toLowerCase();
+                    const donationTaxType = donation.taxType ? donation.taxType.toLowerCase() : '';
+    
                     if (filterTaxType && donationTaxType !== filterTaxType) {
                         return false;
                     }
                 }
-
+    
                 return true;
             });
-
+    
         } catch (err) {
             console.error('Error fetching filtered donations:', err);
             error.value = err.message || 'Failed to fetch donations';
