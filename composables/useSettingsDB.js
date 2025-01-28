@@ -177,6 +177,22 @@ export const useSettingsDB = () => {
         }
     }
 
+    const fetchLoggedInUser = async (pin) => {
+        isLoading.value = true
+        error.value = null
+
+        try {
+            const users = await fetchUsers()
+            return users.find(u => u.password === pin)
+        } catch (err) {
+            console.error('Error fetching logged in user:', err)
+            error.value = err
+            throw err
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         isLoading,
         error,
