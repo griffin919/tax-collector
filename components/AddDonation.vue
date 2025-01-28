@@ -99,8 +99,9 @@
           v-model="formData.collector_name"
           type="text"
           placeholder="Enter collector's name"
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          class="w-full px-4 py-2 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           required
+          readonly
         />
       </div>
 
@@ -165,6 +166,7 @@ const { fetchTaxTypes } = useSettingsDB()
 const { recordDonation } = useRealtimeDB()
 const { sendSMS } = useSMS()
 const { printReceipt } = useUtils()
+const {fetchLoggedInUser} = useSettingsDB()
 
 const emit = defineEmits(['donation-added', 'close'])
 
@@ -182,6 +184,8 @@ const formData = ref({
   payment_id: ''
 })
 
+
+
 // Format helpers
 const formatCurrency = (amount) => {
   return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')
@@ -197,6 +201,15 @@ const formatDate = (date) => {
     hour12: true
   })
 }
+
+onMounted(async () => {
+  // get pin from local storage
+  if(window && window.localStorage) {
+    let pin = localStorage.getItem('user_pin')
+    const user = await fetchLoggedInUser(pin)
+    formData.value.collector_name = user.username
+  }
+})
 
 // Watch for form changes to show/hide preview
 const watchFormChanges = computed(() => ({

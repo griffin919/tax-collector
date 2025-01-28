@@ -205,6 +205,7 @@ export const useSettingsDB = () => {
         fetchUsers,
         addUser,
         updateUser,
-        deleteUser
+        deleteUser,
+        fetchLoggedInUser
     }
 }

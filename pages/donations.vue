@@ -4,22 +4,24 @@
     <!-- Main Content Container -->
     <div class="p-4 lg:p-6 max-w-[1920px] mx-auto">
       <!-- Stats Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div class="flex w-full gap-4 mb-6">
         <!-- Total Amount Card -->
-        <div class="bg-white rounded-lg p-4 shadow-sm">
+        <div class="bg-white w-1/2 rounded-lg p-4 shadow-sm">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-blue-100 rounded-lg">
               <Icon name="lucide:dollar-sign" class="h-5 w-5 text-blue-600" />
             </div>
             <div>
               <p class="text-sm text-gray-600">Total Payments</p>
-              <p class="text-xl font-semibold">{{ formatCurrency(totalDonations) }}</p>
+              <p class="text-xl font-semibold">
+                {{ formatCurrency(totalDonations) }}
+              </p>
             </div>
           </div>
         </div>
-        
+
         <!-- Total Count Card -->
-        <div class="bg-white rounded-lg p-4 shadow-sm">
+        <div class="bg-white w-1/2 rounded-lg p-4 shadow-sm">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-green-100 rounded-lg">
               <Icon name="lucide:users" class="h-5 w-5 text-green-600" />
@@ -34,12 +36,12 @@
 
       <!-- Filters Section -->
       <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <div class="flex flex-col lg:flex-row gap-4">
+        <div class="flex flex-col lg:flex-row gap-2">
           <!-- Search Input -->
-          <div class="w-full lg:w-64">
-            <div class="relative">
-              <Icon 
-                name="lucide:search" 
+          <div class="w-full lg:w-64 flex justify-between items-center">
+            <div class="relative w-75">
+              <Icon
+                name="lucide:search"
                 class="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
               />
               <input
@@ -47,60 +49,45 @@
                 type="text"
                 placeholder="Search payments..."
                 @input="debouncedFilter"
-                class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                class="pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
-          </div>
 
-          <!-- Filters Group -->
-          <div class="flex flex-col sm:flex-row gap-4 flex-grow">
-            <!-- Tax Type Select -->
-            <select
-              v-model="filters.taxType"
-              @change="applyFilters"
-              class="w-full sm:w-48 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option value="">All Tax Types</option>
-              <option 
-                v-for="type in uniqueTaxTypes" 
-                :key="type.value" 
-                :value="type.value"
-              >
-                {{ type.label }}
-              </option>
-            </select>
-            
-            <!-- Collector Select -->
-            <select
-              v-model="filters.collector"
-              @change="applyFilters"
-              class="w-full sm:w-48 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option value="">All Collectors</option>
-              <option 
-                v-for="collector in uniqueCollectors" 
-                :key="collector.value" 
-                :value="collector.value"
-              >
-                {{ collector.label }}
-              </option>
-            </select>
+            <div class="flex gap-1 justify-end w-20" id="actions-groupmobile">              <!-- Export Dropdown -->
+              <div class="relative">
+                <button
+                  @click.stop="toggleExportMenu"
+                  class="px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 dropdown-trigger"
+                >
+                  <Icon name="lucide:download" class="h-7 w-5" />
+                </button>
 
-            <!-- Date Range Inputs -->
-            <div class="flex gap-2 flex-grow">
-              <input
-                v-model="filters.startDate"
-                type="date"
-                class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-              <input
-                v-model="filters.endDate"
-                type="date"
-                class="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
+                <!-- Export Menu -->
+                <div
+                  v-if="isExportMenuOpen"
+                  class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10"
+                >
+                  <button
+                    @click="downloadCSV"
+                    class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Icon name="lucide:file-text" class="h-4 w-4" />
+                    Export as CSV
+                  </button>
+                  <button
+                    @click="downloadPDF"
+                    class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Icon name="lucide:file" class="h-4 w-4" />
+                    Export as PDF
+                  </button>
+                </div>
+              </div>
+
+              <!-- Refresh Button -->
               <button
-                @click="applyFilters"
-                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                @click="loadDonations"
+                class="p-2 border text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 :disabled="isLoading"
               >
                 <Icon
@@ -108,24 +95,89 @@
                   name="lucide:loader"
                   class="h-5 w-5 animate-spin"
                 />
-                <Icon v-else name="lucide:filter" class="h-5 w-5" />
-                Filter
+                <Icon v-else name="lucide:refresh-cw" class="h-5 w-5" />
               </button>
             </div>
           </div>
 
+          <!-- Filters Group -->
+          <div class="flex flex-col flex-wrap sm:flex-row gap-4 flex-grow">
+            <!-- Tax Type Select -->
+            <span class="flex justify-between flex-wrap gap-2">
+              <select
+                v-model="filters.taxType"
+                @change="applyFilters"
+                class="sm:w-45 w-40 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="">All Tax Types</option>
+                <option
+                  v-for="type in uniqueTaxTypes"
+                  :key="type.value"
+                  :value="type.value"
+                >
+                  {{ type.label }}
+                </option>
+              </select>
+
+              <!-- Collector Select -->
+              <select
+                v-model="filters.collector"
+                @change="applyFilters"
+                class="sm:w-48 w-40 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="">All Collectors</option>
+                <option
+                  v-for="collector in uniqueCollectors"
+                  :key="collector.value"
+                  :value="collector.value"
+                >
+                  {{ collector.label }}
+                </option>
+              </select>
+            </span>
+
+            <!-- Date Range Inputs -->
+            <div class="flex justify-between flex-wrap gap-2 flex-grow">
+              <input
+                v-model="filters.startDate"
+                type="date"
+                class="w-40 sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <input
+                v-model="filters.endDate"
+                type="date"
+                class="w-40 sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <span class="flex gap-2 justify-end">
+                <button
+                  @click="applyFilters"
+                  class="px-4 py-2 w-full bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                  :disabled="isLoading"
+                >
+                  <Icon
+                    v-if="isLoading"
+                    name="lucide:loader"
+                    class="h-5 w-5 animate-spin"
+                  />
+                  <Icon v-else name="lucide:filter" class="h-5 w-5" />
+                  Filter
+                </button>
+              </span>
+            </div>
+          </div>
+
           <!-- Actions Group -->
-          <div class="flex gap-2 justify-end">
-            <!-- Export Dropdown -->
+          <div class="flex gap-1 justify-end w-20" id="actions-group">           
+             <!-- Export Dropdown -->
             <div class="relative">
               <button
-  @click.stop="toggleExportMenu"
-  class="px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 dropdown-trigger"
->
-  <Icon name="lucide:download" class="h-5 w-5" />
-  Export
-</button>
-              
+                @click.stop="toggleExportMenu"
+                class="px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 dropdown-trigger"
+              >
+                <Icon name="lucide:download" class="h-5 w-5" />
+                Export
+              </button>
+
               <!-- Export Menu -->
               <div
                 v-if="isExportMenuOpen"
@@ -147,7 +199,7 @@
                 </button>
               </div>
             </div>
-            
+
             <!-- Refresh Button -->
             <button
               @click="loadDonations"
@@ -189,24 +241,28 @@
               >
                 <td class="py-2 px-4 text-sm">{{ donation.name }}</td>
                 <td class="py-2 px-4 text-sm">{{ donation.contact }}</td>
-                <td class="py-2 px-4 text-sm">{{ formatCurrency(donation.amount) }}</td>
-                <td class="py-2 px-4 text-sm">{{ formatDate(donation.date) }}</td>
+                <td class="py-2 px-4 text-sm">
+                  {{ formatCurrency(donation.amount) }}
+                </td>
+                <td class="py-2 px-4 text-sm">
+                  {{ formatDate(donation.date) }}
+                </td>
                 <td class="py-2 px-4 text-sm">{{ donation.taxType }}</td>
                 <td class="py-2 px-4 text-sm">{{ donation.collector_name }}</td>
                 <td class="py-2 px-4">
                   <div class="relative">
                     <button
-  @click.stop="openActionMenu(donation)"
-  class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors dropdown-trigger"
->
-  <Icon name="lucide:more-vertical" class="h-5 w-5" />
-</button>
-                    
+                      @click.stop="openActionMenu(donation)"
+                      class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors dropdown-trigger"
+                    >
+                      <Icon name="lucide:more-vertical" class="h-5 w-5" />
+                    </button>
+
                     <!-- Action Menu -->
                     <div
-  v-show="activeActionMenuId === donation.payment_id"
-  class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10 dropdown-menu"
->
+                      v-show="activeActionMenuId === donation.payment_id"
+                      class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10 dropdown-menu"
+                    >
                       <button
                         @click="reprintReceipt(donation)"
                         class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
@@ -244,7 +300,9 @@
         </div>
 
         <!-- Pagination -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t">
+        <div
+          class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t"
+        >
           <div class="flex items-center gap-2 w-full sm:w-auto">
             <select
               v-model="itemsPerPage"
@@ -256,7 +314,8 @@
               <option :value="50">50 per page</option>
             </select>
             <span class="text-sm text-gray-600 hidden sm:inline">
-              {{ startIndex + 1 }}-{{ endIndex }} of {{ filteredDonations.length }}
+              {{ startIndex + 1 }}-{{ endIndex }} of
+              {{ filteredDonations.length }}
             </span>
           </div>
 
@@ -295,17 +354,23 @@
 
     <!-- Modals -->
     <!-- Add Payment Modal -->
-    <div v-if="isAddModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div
+      v-if="isAddModalOpen"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
-        <AddDonation 
-          @donation-added="handleDonationAdded" 
-          @close="isAddModalOpen = false" 
+        <AddDonation
+          @donation-added="handleDonationAdded"
+          @close="isAddModalOpen = false"
         />
       </div>
     </div>
 
     <!-- Update Payment Modal -->
-    <div v-if="isUpdateModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div
+      v-if="isUpdateModalOpen"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
         <UpdateDonation
           :donation="selectedDonation"
@@ -316,7 +381,7 @@
     </div>
 
     <!-- Click Outside Handler -->
-    <div 
+    <div
       v-if="isActionMenuOpen || isExportMenuOpen"
       class="fixed inset-0 z-40"
       @click="closeAllMenus"
@@ -332,7 +397,8 @@ import { useDebounceFn } from "@vueuse/core";
 
 const { printReceipt } = useUtils();
 const { sendSMS } = useSMS();
-const { fetchDonationsByFilter, fetchDonations, deleteDonation } = useRealtimeDB();
+const { fetchDonationsByFilter, fetchDonations, deleteDonation } =
+  useRealtimeDB();
 
 // State
 const donations = ref([]);
@@ -355,7 +421,6 @@ const filters = ref({
 });
 const activeActionMenuId = ref(null);
 
-
 // Constants
 const tableHeaders = [
   { key: "name", label: "Name" },
@@ -366,14 +431,13 @@ const tableHeaders = [
   { key: "collector_name", label: "Collector" },
 ];
 
-
 // Update closeAllMenus function
 const closeAllMenus = () => {
   activeActionMenuId.value = null;
   isExportMenuOpen.value = false;
-  
+
   if (clickOutsideHandler) {
-    document.removeEventListener('click', clickOutsideHandler);
+    document.removeEventListener("click", clickOutsideHandler);
     clickOutsideHandler = null;
   }
 };
@@ -381,7 +445,7 @@ const closeAllMenus = () => {
 // Clean up on component unmount
 onUnmounted(() => {
   if (clickOutsideHandler) {
-    document.removeEventListener('click', clickOutsideHandler);
+    document.removeEventListener("click", clickOutsideHandler);
   }
 });
 // Computed Properties
@@ -431,7 +495,7 @@ let clickOutsideHandler = null;
 const openActionMenu = (donation) => {
   // Close export menu first
   isExportMenuOpen.value = false;
-  
+
   // If clicking the same menu, close it
   if (activeActionMenuId.value === donation.payment_id) {
     activeActionMenuId.value = null;
@@ -446,14 +510,14 @@ const openActionMenu = (donation) => {
   setTimeout(() => {
     clickOutsideHandler = (event) => {
       const target = event.target;
-      const isDropdownTrigger = target.closest('.dropdown-trigger');
-      const isDropdownMenu = target.closest('.dropdown-menu');
-      
+      const isDropdownTrigger = target.closest(".dropdown-trigger");
+      const isDropdownMenu = target.closest(".dropdown-menu");
+
       if (!isDropdownTrigger && !isDropdownMenu) {
         closeAllMenus();
       }
     };
-    document.addEventListener('click', clickOutsideHandler);
+    document.addEventListener("click", clickOutsideHandler);
   }, 0);
 };
 
@@ -461,21 +525,21 @@ const openActionMenu = (donation) => {
 const toggleExportMenu = () => {
   // Close action menu first
   activeActionMenuId.value = null;
-  
+
   isExportMenuOpen.value = !isExportMenuOpen.value;
 
   if (isExportMenuOpen.value) {
     setTimeout(() => {
       clickOutsideHandler = (event) => {
         const target = event.target;
-        const isDropdownTrigger = target.closest('.dropdown-trigger');
-        const isDropdownMenu = target.closest('.dropdown-menu');
-        
+        const isDropdownTrigger = target.closest(".dropdown-trigger");
+        const isDropdownMenu = target.closest(".dropdown-menu");
+
         if (!isDropdownTrigger && !isDropdownMenu) {
           closeAllMenus();
         }
       };
-      document.addEventListener('click', clickOutsideHandler);
+      document.addEventListener("click", clickOutsideHandler);
     }, 0);
   }
 };
@@ -623,7 +687,8 @@ const deleteDonationRecord = async (donation) => {
   closeAllMenus();
   const confirmed = await $confirm({
     title: "Delete Payment",
-    content: "Are you sure you want to delete this payment record? This action cannot be undone.",
+    content:
+      "Are you sure you want to delete this payment record? This action cannot be undone.",
     confirmLabel: "Delete",
     cancelLabel: "Cancel",
     type: "danger",
@@ -755,8 +820,6 @@ onMounted(() => {
   loadDonations();
 });
 
-
-
 // Page Meta
 definePageMeta({
   title: "Payments Dashboard",
@@ -764,3 +827,16 @@ definePageMeta({
   layout: "mainlayout",
 });
 </script>
+<style>
+@media (max-width: 640px) {
+  #actions-group {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) {
+  #actions-groupmobile {
+    display: none;
+  }
+}
+</style>
