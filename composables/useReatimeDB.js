@@ -29,7 +29,7 @@ export const useRealtimeDB = () => {
             }
             return []
         } catch (err) {
-            console.error('Error fetching donations:', err)
+            console.error('Error fetching:', err)
             error.value = err
             throw err
         } finally {
@@ -111,9 +111,9 @@ export const useRealtimeDB = () => {
             });
     
         } catch (err) {
-            console.error('Error fetching filtered donations:', err);
-            error.value = err.message || 'Failed to fetch donations';
-            throw new Error('Failed to fetch donations: ' + err.message);
+            console.error('Error fetching filtered:', err);
+            error.value = err.message || 'Failed to fetch';
+            throw new Error('Failed to fetch: ' + err.message);
         } finally {
             isLoading.value = false;
         }
@@ -148,7 +148,7 @@ export const useRealtimeDB = () => {
             await remove(dbRef($database, `donations/${userId}/${donationId}`))
             return { success: true }
         } catch (err) {
-            console.error('Error deleting donation:', err)
+            console.error('Error deleting:', err)
             error.value = err
             return { success: false, message: err.message }
         } finally {
@@ -165,7 +165,7 @@ export const useRealtimeDB = () => {
             await update(dbRef($database, `donations/${userId}/${donationId}`), data)
             return { success: true }
         } catch (err) {
-            console.error('Error updating donation:', err)
+            console.error('Error updating:', err)
             error.value = err
             return { success: false, message: err.message }
         } finally {

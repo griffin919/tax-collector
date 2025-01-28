@@ -369,11 +369,11 @@ const loadDonations = async () => {
     donations.value = donationsData;
     await applyFilters();
   } catch (error) {
-    console.error("Error loading donations:", error);
+    console.error("Error loading:", error);
     const toast = useToast();
     toast.add({
       title: "Error",
-      description: "Failed to load donations. Please try again.",
+      description: "Failed to load. Please try again.",
       color: "red",
     });
   } finally {

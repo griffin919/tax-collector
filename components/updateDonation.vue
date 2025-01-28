@@ -354,11 +354,11 @@ const handleSubmit = async () => {
       });
     }
   } catch (error) {
-    console.error("Failed to update donation:", error);
+    console.error("Failed to update:", error);
     const toast = useToast();
     toast.add({
       title: "Error",
-      description: "Failed to update donation",
+      description: "Failed to update",
       color: "red",
     });
   }
@@ -367,6 +367,6 @@ const handleSubmit = async () => {
 };
 
 onMounted(() => {
-  console.log("Updating donation:", donationData.value.payment_id);
+  console.log("Updating:", donationData.value.payment_id);
 });
 </script>

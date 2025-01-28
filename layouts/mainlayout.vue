@@ -73,6 +73,7 @@
             v-if="currentUser?.role === 'Admin'"
           >
             <Icon name="lucide:settings" class="h-5 w-5" />
+            Settings
           </button>
               <button
                 @click="handleLogout"
