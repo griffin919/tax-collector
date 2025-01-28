@@ -68,6 +68,13 @@
                 Reports
               </button>
               <button
+            @click="handleNavToSettings"
+            class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+            v-if="currentUser?.role === 'Admin'"
+          >
+            <Icon name="lucide:settings" class="h-5 w-5" />
+          </button>
+              <button
                 @click="handleLogout"
                 class="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-red-600"
               >
