@@ -101,9 +101,9 @@
           </div>
 
           <!-- Filters Group -->
-          <div class="flex flex-col flex-wrap gap-4 flex-grow">
+          <div class="flex justify-start flex-wrap gap-4 flex-grow">
             <!-- Tax Type Select -->
-            <span class="flex justify-center flex-wrap gap-2">
+            <span class="flex justify-start flex-wrap gap-2">
               <select
                 v-model="filters.taxType"
                 @change="applyFilters"
@@ -137,7 +137,7 @@
             </span>
 
             <!-- Date Range Inputs -->
-            <div class="flex justify-between flex-wrap gap-2 flex-grow">
+            <div class="flex justify-start flex-wrap gap-2 flex-grow">
               <input
                 v-model="filters.startDate"
                 type="date"
