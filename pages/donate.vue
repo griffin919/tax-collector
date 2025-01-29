@@ -176,7 +176,7 @@
     </button>
 
     <!-- Modals -->
-    <AddDonation
+    <!-- <AddDonation
       v-if="isAddModalOpen"
       @donation-added="handleDonationAdded"
       @close="isAddModalOpen = false"
@@ -187,7 +187,35 @@
       :donation="selectedDonation"
       @donation-updated="handleDonationUpdated"
       @close="isUpdateModalOpen = false"
-    />
+    /> -->
+
+      <!-- Modals -->
+    <!-- Add Payment Modal -->
+    <div
+      v-if="isAddModalOpen"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+        <AddDonation
+          @donation-added="handleDonationAdded"
+          @close="isAddModalOpen = false"
+        />
+      </div>
+    </div>
+
+    <!-- Update Payment Modal -->
+    <div
+      v-if="isUpdateModalOpen"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+        <UpdateDonation
+          :donation="selectedDonation"
+          @donation-updated="handleDonationUpdated"
+          @close="isUpdateModalOpen = false"
+        />
+      </div>
+    </div>
 
     <!-- Export Menu -->
     <div
