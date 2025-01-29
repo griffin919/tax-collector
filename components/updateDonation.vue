@@ -144,10 +144,9 @@
     </form>
 
     <!-- Preview -->
-    <div v-if="showPreview" class="mt-6 border-t pt-6">
+    <!-- <div v-if="showPreview" class="mt-6 border-t pt-6">
       <h3 class="text-lg font-medium mb-4">Preview</h3>
       
-      <!-- Receipt Preview -->
       <div class="bg-gray-50 p-4 rounded-lg mb-4">
         <h4 class="font-medium mb-2">Receipt</h4>
         <div class="text-sm space-y-1">
@@ -160,14 +159,13 @@
         </div>
       </div>
 
-      <!-- SMS Preview -->
       <div class="bg-gray-50 p-4 rounded-lg">
         <h4 class="font-medium mb-2">SMS Message</h4>
         <p class="text-sm text-gray-600">
           Dear {{ donationData.name }}, your payment has been updated. Current amount: GHS {{ formatCurrency(donationData.amount) }} for {{ donationData.taxType }} on {{ formatDate(donationData.date) }}. Thank you.
         </p>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 

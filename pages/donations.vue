@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen p-2 bg-gray-50">
+  <div class="min-h-screen p-2 bg-gray-50" style="position: relative">
     <!-- Main Content Container -->
     <div class="p-2 max-w-[1920px] mx-auto">
       <!-- Stats Grid -->
@@ -370,19 +370,48 @@
       <Icon name="lucide:plus" class="h-5 w-5" />
     </button>
 
-    <!-- Modals -->
-    <AddDonation
-      v-if="isAddModalOpen"
-      @donation-added="handleDonationAdded"
-      @close="isAddModalOpen = false"
-    />
+    <!-- <div style="position: absolute">
+      <AddDonation
+        v-if="isAddModalOpen"
+        @donation-added="handleDonationAdded"
+        @close="isAddModalOpen = false"
+      />
 
-    <updateDonation
+      <updateDonation
+        v-if="isUpdateModalOpen"
+        :donation="selectedDonation"
+        @donation-updated="handleDonationUpdated"
+        @close="isUpdateModalOpen = false"
+      />
+    </div> -->
+
+    <!-- Modals -->
+    <!-- Add Payment Modal -->
+    <div
+      v-if="isAddModalOpen"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+        <AddDonation
+          @donation-added="handleDonationAdded"
+          @close="isAddModalOpen = false"
+        />
+      </div>
+    </div>
+
+    <!-- Update Payment Modal -->
+    <div
       v-if="isUpdateModalOpen"
-      :donation="selectedDonation"
-      @donation-updated="handleDonationUpdated"
-      @close="isUpdateModalOpen = false"
-    />
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+        <UpdateDonation
+          :donation="selectedDonation"
+          @donation-updated="handleDonationUpdated"
+          @close="isUpdateModalOpen = false"
+        />
+      </div>
+    </div>
 
     <!-- Export Menu -->
     <div
