@@ -19,15 +19,7 @@
         </div>
 
         <!-- Action Icons -->
-        <div class="flex items-center gap-4">
-          <!-- Settings -->
-          <button
-            @click="handleNavToSettings"
-            class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            v-if="currentUser?.role === 'Admin'"
-          >
-            <Icon name="lucide:settings" class="h-5 w-5" />
-          </button>
+        <div class="flex items-center gap-4">       
 
           <!-- Profile/Logout Dropdown -->
           <div class="relative">
@@ -35,7 +27,8 @@
               @click="isProfileMenuOpen = !isProfileMenuOpen"
               class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
             >
-              <Icon name="lucide:user" class="h-5 w-5" />
+            menu
+              <Icon name="lucide:menu" class="h-5 w-5" />
               <span class="text-sm font-medium hidden sm:block">
                 {{ currentUser?.username }}
                 <span class="text-gray-500">({{ currentUser?.role }})</span>

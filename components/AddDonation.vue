@@ -3,10 +3,7 @@
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-semibold text-gray-900">Record Payment</h2>
-      <button
-        @click="$emit('close')"
-        class="text-gray-500 hover:text-gray-700"
-      >
+      <button @click="$emit('close')" class="text-gray-500 hover:text-gray-700">
         <Icon name="lucide:x" class="h-6 w-6" />
       </button>
     </div>
@@ -52,11 +49,7 @@
           required
         >
           <option value="">Select Tax Type</option>
-          <option 
-            v-for="tax in taxes" 
-            :key="tax.id"
-            :value="tax.name"
-          >
+          <option v-for="tax in taxes" :key="tax.id" :value="tax.name">
             {{ tax.name }} - GHS {{ formatCurrency(tax.amount) }}
           </option>
         </select>
@@ -72,6 +65,7 @@
           type="datetime-local"
           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           required
+          readonly
         />
       </div>
 
@@ -116,6 +110,7 @@
         </button>
         <button
           type="submit"
+          @click="handleSubmit(false)"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
           :disabled="isLoading"
         >
@@ -125,7 +120,21 @@
             class="h-5 w-5 animate-spin"
           />
           <Icon v-else name="lucide:save" class="h-5 w-5" />
-          Save Payment
+          Save
+        </button>
+        <button
+          type="submit"
+          @click="handleSubmit"
+          class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+          :disabled="isLoading"
+        >
+          <Icon
+            v-if="isLoading"
+            name="lucide:loader"
+            class="h-5 w-5 animate-spin"
+          />
+          <Icon v-else name="lucide:save" class="h-5 w-5" />
+          Save and Print
         </button>
       </div>
     </form>
@@ -133,17 +142,30 @@
     <!-- Preview Print and SMS -->
     <div v-if="showPreview" class="mt-6 border-t pt-6">
       <h3 class="text-lg font-medium mb-4">Preview</h3>
-      
+
       <!-- Receipt Preview -->
       <div class="bg-gray-50 p-4 rounded-lg mb-4">
         <h4 class="font-medium mb-2">Receipt</h4>
         <div class="text-sm space-y-1">
           <p><span class="text-gray-600">Name:</span> {{ formData.name }}</p>
-          <p><span class="text-gray-600">Contact:</span> {{ formData.contact }}</p>
-          <p><span class="text-gray-600">Tax Type:</span> {{ formData.taxType }}</p>
-          <p><span class="text-gray-600">Amount:</span> GHS {{ formatCurrency(formData.amount) }}</p>
-          <p><span class="text-gray-600">Date:</span> {{ formatDate(formData.date) }}</p>
-          <p><span class="text-gray-600">Collector:</span> {{ formData.collector_name }}</p>
+          <p>
+            <span class="text-gray-600">Contact:</span> {{ formData.contact }}
+          </p>
+          <p>
+            <span class="text-gray-600">Tax Type:</span> {{ formData.taxType }}
+          </p>
+          <p>
+            <span class="text-gray-600">Amount:</span> GHS
+            {{ formatCurrency(formData.amount) }}
+          </p>
+          <p>
+            <span class="text-gray-600">Date:</span>
+            {{ formatDate(formData.date) }}
+          </p>
+          <p>
+            <span class="text-gray-600">Collector:</span>
+            {{ formData.collector_name }}
+          </p>
         </div>
       </div>
 
@@ -151,7 +173,9 @@
       <div class="bg-gray-50 p-4 rounded-lg">
         <h4 class="font-medium mb-2">SMS Message</h4>
         <p class="text-sm text-gray-600">
-          Dear {{ formData.name }}, your payment of GHS {{ formatCurrency(formData.amount) }} for {{ formData.taxType }} on {{ formatDate(formData.date) }} has been received. Thank you.
+          Dear {{ formData.name }}, your payment of GHS
+          {{ formatCurrency(formData.amount) }} for {{ formData.taxType }} on
+          {{ formatDate(formData.date) }} has been received. Thank you.
         </p>
       </div>
     </div>
@@ -159,131 +183,139 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { v4 as uuidv4 } from 'uuid'
+import { ref, computed, onMounted } from "vue";
+import { v4 as uuidv4 } from "uuid";
 
-const { fetchTaxTypes } = useSettingsDB()
-const { recordDonation } = useRealtimeDB()
-const { sendSMS } = useSMS()
-const { printReceipt } = useUtils()
-const {fetchLoggedInUser} = useSettingsDB()
+const { fetchTaxTypes } = useSettingsDB();
+const { recordDonation } = useRealtimeDB();
+const { sendSMS } = useSMS();
+const { printReceipt } = useUtils();
+const { fetchLoggedInUser } = useSettingsDB();
 
-const emit = defineEmits(['donation-added', 'close'])
+const emit = defineEmits(["donation-added", "close"]);
 
-const isLoading = ref(false)
-const taxes = ref([])
-const showPreview = ref(false)
+const isLoading = ref(false);
+const taxes = ref([]);
+const showPreview = ref(false);
 
 const formData = ref({
-  name: '',
-  contact: '',
-  taxType: '',
-  amount: '',
-  collector_name: '',
+  name: "",
+  contact: "",
+  taxType: "",
+  amount: "",
+  collector_name: "",
   date: new Date().toISOString().slice(0, 16),
-  payment_id: ''
-})
-
-
+  payment_id: "",
+});
 
 // Format helpers
 const formatCurrency = (amount) => {
-  return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')
-}
+  return Number(amount)
+    .toFixed(2)
+    .replace(/\d(?=(\d{3})+\.)/g, "$&,");
+};
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  })
-}
+  return new Date(date).toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
 
 onMounted(async () => {
   // get pin from local storage
-  if(window && window.localStorage) {
-    let pin = localStorage.getItem('user_pin')
-    const user = await fetchLoggedInUser(pin)
-    formData.value.collector_name = user.username
+  if (window && window.localStorage) {
+    let pin = localStorage.getItem("user_pin");
+    const user = await fetchLoggedInUser(pin);
+    formData.value.collector_name = user.username;
   }
-})
+});
 
 // Watch for form changes to show/hide preview
 const watchFormChanges = computed(() => ({
   name: formData.value.name,
   amount: formData.value.amount,
   taxType: formData.value.taxType,
-  date: formData.value.date
-}))
+  date: formData.value.date,
+}));
 
-watch(watchFormChanges, () => {
-  showPreview.value = Boolean(
-    formData.value.name &&
-    formData.value.amount &&
-    formData.value.taxType &&
-    formData.value.date
-  )
-}, { deep: true })
+watch(
+  watchFormChanges,
+  () => {
+    showPreview.value = Boolean(
+      formData.value.name &&
+        formData.value.amount &&
+        formData.value.taxType &&
+        formData.value.date
+    );
+  },
+  { deep: true }
+);
 
 // Load tax types when component mounts
 const loadTaxTypes = async () => {
   try {
-    const data = await fetchTaxTypes()
-    taxes.value = data
+    const data = await fetchTaxTypes();
+    taxes.value = data;
   } catch (err) {
-    console.error('Error loading tax types:', err)
-    const toast = useToast()
+    console.error("Error loading tax types:", err);
+    const toast = useToast();
     toast.add({
-      title: 'Error',
-      description: 'Failed to load tax types',
-      color: 'red'
-    })
+      title: "Error",
+      description: "Failed to load tax types",
+      color: "red",
+    });
   }
-}
+};
 
 // Handle tax type selection
 const handleTaxTypeChange = () => {
-  const selectedTax = taxes.value.find(tax => tax.name === formData.value.taxType)
+  const selectedTax = taxes.value.find(
+    (tax) => tax.name === formData.value.taxType
+  );
   if (selectedTax) {
-    formData.value.amount = selectedTax.amount
+    formData.value.amount = selectedTax.amount;
   } else {
-    formData.value.amount = ''
+    formData.value.amount = "";
   }
-}
+};
 
 // Form submission
-const handleSubmit = async () => {
+const handleSubmit = async (withPrint = true) => {
   try {
-    isLoading.value = true
-    
+    isLoading.value = true;
+
     // Validate phone number
-    const { isValidInternationalPhone } = useSMS()
+    const { isValidInternationalPhone } = useSMS();
     if (!isValidInternationalPhone(formData.value.contact)) {
-      const toast = useToast()
+      const toast = useToast();
       toast.add({
-        title: 'Error',
-        description: 'Please enter a valid phone number',
-        color: 'red'
-      })
-      return
+        title: "Error",
+        description: "Please enter a valid phone number",
+        color: "red",
+      });
+      return;
     }
-    
+
     const paymentData = {
       ...formData.value,
       payment_id: uuidv4(),
-      timestamp: Date.now()
-    }
+      timestamp: Date.now(),
+    };
 
     // Record the donation
-    const result = await recordDonation(paymentData, 'user123')
-    
+    const result = await recordDonation(paymentData, "user123");
+
     if (result.success) {
       // Print receipt
-      await printReceipt(paymentData, '/images/ama_logo.png')
-      
+      if(withPrint){
+        await printReceipt(paymentData, "/images/logo.png");
+      }
+
       // Send SMS
       await sendSMS(
         paymentData.name,
@@ -291,44 +323,68 @@ const handleSubmit = async () => {
         paymentData.taxType,
         paymentData.date,
         paymentData.amount
-      )
-      
+      );
+
       // Reset form
       formData.value = {
-        name: '',
-        contact: '',
-        taxType: '',
-        amount: '',
-        collector_name: '',
+        name: "",
+        contact: "",
+        taxType: "",
+        amount: "",
+        collector_name: "",
         date: new Date().toISOString().slice(0, 16),
-        payment_id: ''
-      }
-      
+        payment_id: "",
+      };
+
       // Emit success
-      emit('donation-added')
-      
-      const toast = useToast()
+      emit("donation-added");
+
+      const toast = useToast();
       toast.add({
-        title: 'Success',
-        description: 'Payment recorded successfully',
-        color: 'green'
-      })
+        title: "Success",
+        description: "Payment recorded successfully",
+        color: "green",
+      });
     }
   } catch (err) {
-    console.error('Error recording payment:', err)
-    const toast = useToast()
+    console.error("Error recording payment:", err);
+    const toast = useToast();
     toast.add({
-      title: 'Error',
-      description: 'Failed to record payment',
-      color: 'red'
-    })
+      title: "Error",
+      description: "Failed to record payment",
+      color: "red",
+    });
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Initialize
+onMounted(() => {
+  loadTaxTypes();
+});
+
+const saveOnly = async () => {
+  isLoading.value = true
+  try {
+    await recordDonation(formData.value)
+    // Handle success (e.g., show a success message)
+  } catch (error) {
+    // Handle error (e.g., show an error message)
   } finally {
     isLoading.value = false
   }
 }
 
-// Initialize
-onMounted(() => {
-  loadTaxTypes()
-})
+const saveAndPrint = async () => {
+  isLoading.value = true
+  try {
+    await handleSubmit(formData.value)
+    // Handle success (e.g., show a success message)
+  } catch (error) {
+    // Handle error (e.g., show an error message)
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
