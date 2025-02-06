@@ -1,7 +1,7 @@
 # pages/index.vue
 <template>
   <div
-    class="p-6 max-w-6xl mx-auto space-y-6 relative min-h-screen flex flex-col items-center justify-center bg-gray-50"
+    class="p-6  mx-auto space-y-6 relative min-h-screen flex flex-col items-center justify-center bg-gray-50"
   >
     <div class="flex items-center">
       <Icon name="lucide:heart-handshake" class="h-6 w-6 text-blue-500 pr-3" />

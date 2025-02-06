@@ -1,6 +1,6 @@
 <template>
   <div
-    class="p-6 max-w-6xl mx-auto space-y-6 relative min-h-screen flex flex-col items-center justify-center bg-gray-50"
+    class="p-6 mx-auto space-y-6 relative min-h-screen flex flex-col items-center justify-center bg-gray-50"
   >
     <div class="flex items-center">
       <Icon name="lucide:heart-handshake" class="h-6 w-6 text-blue-500 pr-3" />
@@ -77,7 +77,7 @@
     </div>
 
     <div class="mt-6 text-center">
-      <p class="text-sm text-gray-600">Rigel Inc. Technologies © 2025, Accra</p>
+      <p class="text-sm text-gray-600">Rigelis Inc. Technologies © 2025, Accra</p>
     </div>
   </div>
 </template>

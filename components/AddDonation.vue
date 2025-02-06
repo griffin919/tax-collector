@@ -9,21 +9,18 @@
     </div>
 
     <form @submit.prevent="handleSubmit" class="space-y-4">
-      <!-- Name -->
+      <!-- Customer Search - replaces the name input -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">
-          Name
+          Customer
         </label>
-        <input
-          v-model="formData.name"
-          type="text"
-          placeholder="Enter payer's name"
-          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          required
+        <CustomerSearch 
+          v-model="selectedCustomer"
+          @update:modelValue="handleCustomerSelect"
         />
       </div>
 
-      <!-- Contact -->
+      <!-- Contact - now auto-filled from customer selection -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">
           Contact
@@ -33,6 +30,7 @@
           type="tel"
           placeholder="Enter contact number"
           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          :readonly="!!selectedCustomer"
           required
         />
       </div>
@@ -99,7 +97,7 @@
         />
       </div>
 
-      <!-- Submit Button -->
+      <!-- Submit Buttons -->
       <div class="flex justify-end gap-3">
         <button
           type="button"
@@ -124,7 +122,7 @@
         </button>
         <button
           type="submit"
-          @click="handleSubmit"
+          @click="handleSubmit(true)"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
           :disabled="isLoading"
         >
@@ -133,56 +131,18 @@
             name="lucide:loader"
             class="h-5 w-5 animate-spin"
           />
-          <Icon v-else name="lucide:save" class="h-5 w-5" />
+          <Icon v-else name="lucide:printer" class="h-5 w-5" />
           Save and Print
         </button>
       </div>
     </form>
-
-    <!-- Preview Print and SMS -->
-    <!-- <div v-if="showPreview" class="mt-6 border-t pt-6">
-      <h3 class="text-lg font-medium mb-4">Preview</h3>
-
-      <div class="bg-gray-50 p-4 rounded-lg mb-4">
-        <h4 class="font-medium mb-2">Receipt</h4>
-        <div class="text-sm space-y-1">
-          <p><span class="text-gray-600">Name:</span> {{ formData.name }}</p>
-          <p>
-            <span class="text-gray-600">Contact:</span> {{ formData.contact }}
-          </p>
-          <p>
-            <span class="text-gray-600">Tax Type:</span> {{ formData.taxType }}
-          </p>
-          <p>
-            <span class="text-gray-600">Amount:</span> GHS
-            {{ formatCurrency(formData.amount) }}
-          </p>
-          <p>
-            <span class="text-gray-600">Date:</span>
-            {{ formatDate(formData.date) }}
-          </p>
-          <p>
-            <span class="text-gray-600">Collector:</span>
-            {{ formData.collector_name }}
-          </p>
-        </div>
-      </div>
-
-      <div class="bg-gray-50 p-4 rounded-lg">
-        <h4 class="font-medium mb-2">SMS Message</h4>
-        <p class="text-sm text-gray-600">
-          Dear {{ formData.name }}, your payment of GHS
-          {{ formatCurrency(formData.amount) }} for {{ formData.taxType }} on
-          {{ formatDate(formData.date) }} has been received. Thank you.
-        </p>
-      </div>
-    </div> -->
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { v4 as uuidv4 } from "uuid";
+import CustomerSearch from './CustomerSearch.vue';
 
 const { fetchTaxTypes } = useSettingsDB();
 const { recordDonation } = useRealtimeDB();
@@ -194,7 +154,7 @@ const emit = defineEmits(["donation-added", "close"]);
 
 const isLoading = ref(false);
 const taxes = ref([]);
-const showPreview = ref(false);
+const selectedCustomer = ref(null);
 
 const formData = ref({
   name: "",
@@ -204,7 +164,21 @@ const formData = ref({
   collector_name: "",
   date: new Date().toISOString().slice(0, 16),
   payment_id: "",
+  customer_id: "", // New field for customer reference
 });
+
+// Handle customer selection
+const handleCustomerSelect = (customer) => {
+  if (customer) {
+    formData.value.name = `${customer.firstName} ${customer.lastName}`;
+    formData.value.contact = customer.phoneNumber;
+    formData.value.customer_id = customer.id;
+  } else {
+    formData.value.name = "";
+    formData.value.contact = "";
+    formData.value.customer_id = "";
+  }
+};
 
 // Format helpers
 const formatCurrency = (amount) => {
@@ -232,27 +206,6 @@ onMounted(async () => {
     formData.value.collector_name = user.username;
   }
 });
-
-// Watch for form changes to show/hide preview
-const watchFormChanges = computed(() => ({
-  name: formData.value.name,
-  amount: formData.value.amount,
-  taxType: formData.value.taxType,
-  date: formData.value.date,
-}));
-
-watch(
-  watchFormChanges,
-  () => {
-    showPreview.value = Boolean(
-      formData.value.name &&
-        formData.value.amount &&
-        formData.value.taxType &&
-        formData.value.date
-    );
-  },
-  { deep: true }
-);
 
 // Load tax types when component mounts
 const loadTaxTypes = async () => {
@@ -310,7 +263,7 @@ const handleSubmit = async (withPrint = true) => {
 
     if (result.success) {
       // Print receipt
-      if(withPrint){
+      if(withPrint) {
         await printReceipt(paymentData, "/images/logo.png");
       }
 
@@ -332,7 +285,9 @@ const handleSubmit = async (withPrint = true) => {
         collector_name: "",
         date: new Date().toISOString().slice(0, 16),
         payment_id: "",
+        customer_id: "",
       };
+      selectedCustomer.value = null;
 
       // Emit success
       emit("donation-added");
@@ -361,28 +316,4 @@ const handleSubmit = async (withPrint = true) => {
 onMounted(() => {
   loadTaxTypes();
 });
-
-const saveOnly = async () => {
-  isLoading.value = true
-  try {
-    await recordDonation(formData.value)
-    // Handle success (e.g., show a success message)
-  } catch (error) {
-    // Handle error (e.g., show an error message)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const saveAndPrint = async () => {
-  isLoading.value = true
-  try {
-    await handleSubmit(formData.value)
-    // Handle success (e.g., show a success message)
-  } catch (error) {
-    // Handle error (e.g., show an error message)
-  } finally {
-    isLoading.value = false
-  }
-}
 </script>

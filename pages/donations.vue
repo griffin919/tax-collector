@@ -44,12 +44,11 @@
                   name="lucide:search"
                   class="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
                 />
-                <input
+                <UInput
                   v-model="filters.search"
                   type="text"
                   placeholder="Search..."
                   @input="debouncedFilter"
-                  class="w-full pl-8 pr-2 py-1.5 text-sm border rounded"
                 />
               </div>
               <button @click="toggleExportMenu" class="p-1.5 border rounded">
@@ -102,17 +101,50 @@
               </select>
             </div>
 
+            <div class="flex gap-2">
+              <!-- Ghana Card Filter -->
+              <div class="w-full sm:w-40">
+                <UInput
+                  v-model="filters.ghanaCard"
+                  placeholder="Ghana Card Number"
+                  @update:modelValue="applyFilters"
+                >
+                  <template #prepend>
+                    <Icon
+                      name="lucide:credit-card"
+                      class="h-4 w-4 text-gray-500"
+                    />
+                  </template>
+                </UInput>
+              </div>
+
+              <!-- Age Range Filter -->
+              <div class="flex items-center gap-2">
+                <UInput
+                  v-model="filters.minAge"
+                  type="number"
+                  placeholder="Min Age"
+                  @update:modelValue="applyFilters"
+                />
+                <span class="text-gray-500">-</span>
+                <UInput
+                  v-model="filters.maxAge"
+                  type="number"
+                  placeholder="Max Age"
+                  @update:modelValue="applyFilters"
+                />
+              </div>
+            </div>
+
             <!-- Mobile Date Range -->
             <div class="flex gap-2">
-              <input
+              <UInput
                 v-model="filters.startDate"
                 type="date"
-                class="flex-1 px-2 py-1.5 text-sm border rounded"
               />
-              <input
+              <UInput
                 v-model="filters.endDate"
                 type="date"
-                class="flex-1 px-2 py-1.5 text-sm border rounded"
               />
               <button
                 @click="applyFilters"
@@ -222,6 +254,43 @@
                 <span>Refresh</span>
               </button>
             </div>
+
+            <div class="flex gap-2">
+              <!-- Ghana Card Filter -->
+              <div class="w-full sm:w-48">
+                <UInput
+                  v-model="filters.ghanaCard"
+                  placeholder="Ghana Card Number"
+                  @update:modelValue="applyFilters"
+                >
+                  <template #prepend>
+                    <Icon
+                      name="lucide:credit-card"
+                      class="h-4 w-4 text-gray-500"
+                    />
+                  </template>
+                </UInput>
+              </div>
+
+              <!-- Age Range Filter -->
+              <div class="flex items-center gap-2">
+                <UInput
+                  v-model="filters.minAge"
+                  type="number"
+                  placeholder="Min Age"
+                  class="w-24"
+                  @update:modelValue="applyFilters"
+                />
+                <span class="text-gray-500">-</span>
+                <UInput
+                  v-model="filters.maxAge"
+                  type="number"
+                  placeholder="Max Age"
+                  class="w-24"
+                  @update:modelValue="applyFilters"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -231,13 +300,14 @@
     <div class="divide-y">
       <!-- Desktop Table Header (hidden on mobile) -->
       <div
-        class="hidden sm:grid sm:grid-cols-6 sm:gap-4 p-2 bg-gray-50 text-sm font-medium text-gray-600"
+        class="hidden sm:grid sm:grid-cols-7 sm:gap-4 p-2 bg-gray-50 text-sm font-medium text-gray-600"
       >
         <div>Name</div>
         <div>Contact</div>
         <div>Amount</div>
         <div>Date</div>
         <div>Tax Type</div>
+        <div>Customer Info</div>
         <div>Collector</div>
       </div>
 
@@ -269,16 +339,36 @@
             <div>{{ donation.taxType }}</div>
             <div class="text-gray-600">Collector:</div>
             <div>{{ donation.collector_name }}</div>
+            <div class="text-gray-600">Customer Info:</div>
+            <div>
+              <div v-if="donation.customer_id" class="text-xs">
+                <div>Ghana Card: {{ donation.customer?.ghanaCard }}</div>
+                <div>                Age:  {{donation.customer?.age }}
+                </div>
+              </div>
+              <div v-else class="text-gray-400 italic text-xs">
+                No customer record
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Desktop Row Layout -->
-        <div class="hidden sm:grid sm:grid-cols-6 sm:gap-4 p-2 items-center">
+        <div class="hidden sm:grid sm:grid-cols-7 sm:gap-4 p-2 items-center">
           <div class="text-sm">{{ donation.name }}</div>
           <div class="text-sm">{{ donation.contact }}</div>
           <div class="text-sm">{{ formatCurrency(donation.amount) }}</div>
           <div class="text-sm">{{ formatDate(donation.date) }}</div>
           <div class="text-sm">{{ donation.taxType }}</div>
+          <div class="text-sm">
+            <div v-if="donation.customer_id">
+              <div>Ghana Card: {{ donation.customer?.ghanaCard }}</div>
+              <div class="text-xs text-gray-500">
+                Age:  {{donation.customer?.age }}
+              </div>
+            </div>
+            <div v-else class="text-gray-400 italic">No customer record</div>
+          </div>
           <div class="flex items-center justify-between">
             <span class="text-sm">{{ donation.collector_name }}</span>
             <button
@@ -450,6 +540,9 @@ import "jspdf-autotable";
 import { useDebounceFn } from "@vueuse/core";
 import AddDonation from "~/components/AddDonation.vue";
 import updateDonation from "~/components/updateDonation.vue";
+// Import customer DB functions
+const { fetchCustomers } = useCustomersDB();
+
 
 const { printReceipt } = useUtils();
 const { sendSMS } = useSMS();
@@ -476,6 +569,9 @@ const filters = ref({
   collector: "",
   startDate: new Date().toISOString().split("T")[0],
   endDate: new Date().toISOString().split("T")[0],
+  ghanaCard: "",
+  minAge: "",
+  maxAge: "",
 });
 
 // Constants
@@ -484,9 +580,98 @@ const tableHeaders = [
   { key: "contact", label: "Contact" },
   { key: "amount", label: "Amount" },
   { key: "date", label: "Date" },
-  { key: "taxType", label: "Tax Type", class: "hidden sm:table-cell" },
-  { key: "collector_name", label: "Collector", class: "hidden sm:table-cell" },
+  { key: "taxType", label: "Tax Type" },
+  { key: "collector_name", label: "Collector" },
+  { key: "ghanaCard", label: "Ghana Card" },
+  { key: "dateOfBirth", label: "Date of Birth" },
+  { key: "age", label: "Age" },
 ];
+
+// Updated CSV export function
+const downloadCSV = () => {
+  const headers = tableHeaders.map((h) => h.label).join(",");
+  const rows = filteredDonations.value.map((donation) =>
+    [
+      donation.name,
+      donation.contact,
+      donation.amount,
+      formatDate(donation.date),
+      donation.taxType,
+      donation.collector_name,
+      donation.customer?.ghanaCard || "",
+      donation.customer?.dateOfBirth
+        ? formatDate(donation.customer.dateOfBirth)
+        : "",
+      donation.customer?.dateOfBirth
+        ? calculateAge(donation.customer.dateOfBirth)
+        : "",
+    ].join(",")
+  );
+
+  const csvContent = [headers, ...rows].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute(
+    "download",
+    `payments-${new Date().toISOString().split("T")[0]}.csv`
+  );
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
+// Updated PDF export function
+const downloadPDF = () => {
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text("Payment Report", 14, 15);
+
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 25);
+  doc.text(`Total: ${formatCurrency(totalDonations.value)}`, 14, 30);
+  doc.text(`Records: ${donationsCount.value}`, 14, 35);
+
+  const headers = tableHeaders.map((h) => h.label);
+  const data = filteredDonations.value.map((donation) => [
+    donation.name,
+    donation.contact,
+    formatCurrency(donation.amount),
+    formatDate(donation.date),
+    donation.taxType,
+    donation.collector_name,
+    donation.customer?.ghanaCard || "",
+    donation.customer?.dateOfBirth
+      ? formatDate(donation.customer.dateOfBirth)
+      : "",
+    donation.customer?.dateOfBirth
+      ? calculateAge(donation.customer.dateOfBirth)
+      : "",
+  ]);
+
+  doc.autoTable({
+    head: [headers],
+    body: data,
+    startY: 45,
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: {
+      fillColor: [59, 130, 246],
+      textColor: 255,
+      fontSize: 8,
+      fontStyle: "bold",
+    },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: {
+      2: { halign: "right" }, // Amount column
+      8: { halign: "center" }, // Age column
+    },
+  });
+
+  doc.save(`payments-${new Date().toISOString().split("T")[0]}.pdf`);
+};
 
 // Computed Properties
 const uniqueTaxTypes = computed(() => {
@@ -575,63 +760,6 @@ const toggleExportMenu = () => {
 
   if (isExportMenuOpen.value) {
     setupClickOutsideHandler();
-  }
-};
-
-const loadDonations = async () => {
-  isLoading.value = true;
-  try {
-    const donationsData = await fetchDonations("user123");
-    donations.value = donationsData;
-    await applyFilters();
-  } catch (error) {
-    console.error("Error loading donations:", error);
-    toast.add({
-      title: "Error",
-      description: "Failed to load donations. Please try again.",
-      color: "red",
-    });
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const applyFilters = async () => {
-  isLoading.value = true;
-  try {
-    const filterParams = {
-      startDate: filters.value.startDate,
-      endDate: filters.value.endDate,
-      taxType: { value: filters.value.taxType },
-      collector_name: { value: filters.value.collector },
-    };
-
-    let results = await fetchDonationsByFilter("user123", filterParams);
-
-    if (filters.value.search) {
-      const searchTerm = filters.value.search.toLowerCase();
-      results = results.filter(
-        (item) =>
-          item.name?.toLowerCase().includes(searchTerm) ||
-          item.taxType?.toLowerCase().includes(searchTerm) ||
-          item.collector_name?.toLowerCase().includes(searchTerm) ||
-          item.contact?.includes(searchTerm)
-      );
-    }
-
-    results.sort((a, b) => new Date(b.date) - new Date(a.date));
-    filteredDonations.value = results;
-    currentPage.value = 1;
-    closeAllMenus();
-  } catch (error) {
-    console.error("Error applying filters:", error);
-    toast.add({
-      title: "Error",
-      description: "Failed to apply filters. Please try again.",
-      color: "red",
-    });
-  } finally {
-    isLoading.value = false;
   }
 };
 
@@ -732,75 +860,6 @@ const deleteDonationRecord = async (donation) => {
   }
 };
 
-// Export Functions
-const downloadCSV = () => {
-  closeAllMenus();
-  const headers = tableHeaders.map((h) => h.label).join(",");
-  const rows = filteredDonations.value.map((donation) =>
-    [
-      donation.name,
-      donation.contact,
-      donation.amount,
-      formatDate(donation.date),
-      donation.taxType,
-      donation.collector_name,
-    ].join(",")
-  );
-
-  const csvContent = [headers, ...rows].join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv" });
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute(
-    "download",
-    `payments-${new Date().toISOString().split("T")[0]}.csv`
-  );
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
-};
-
-const downloadPDF = () => {
-  closeAllMenus();
-  const doc = new jsPDF();
-
-  doc.setFontSize(16);
-  doc.text("Payment Report", 14, 15);
-
-  doc.setFontSize(10);
-  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 25);
-  doc.text(`Total: ${formatCurrency(totalDonations.value)}`, 14, 30);
-  doc.text(`Records: ${donationsCount.value}`, 14, 35);
-
-  const headers = tableHeaders.map((h) => h.label);
-  const data = filteredDonations.value.map((donation) => [
-    donation.name,
-    donation.contact,
-    formatCurrency(donation.amount),
-    formatDate(donation.date),
-    donation.taxType,
-    donation.collector_name,
-  ]);
-
-  doc.autoTable({
-    head: [headers],
-    body: data,
-    startY: 45,
-    styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: {
-      fillColor: [59, 130, 246],
-      textColor: 255,
-      fontSize: 8,
-      fontStyle: "bold",
-    },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
-  });
-
-  doc.save(`payments-${new Date().toISOString().split("T")[0]}.pdf`);
-};
-
 // Event Handlers
 const handleDonationAdded = async () => {
   await loadDonations();
@@ -839,4 +898,285 @@ definePageMeta({
   description: "Track and manage tax payments",
   layout: "mainlayout",
 });
+
+
+// =========================================
+
+
+// Function to calculate age from date of birth
+const calculateAge = (dateOfBirth) => {
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  return age;
+};
+
+// Modified loadDonations to include customer data
+const loadDonations = async () => {
+  isLoading.value = true;
+  try {
+    const [donationsData, customersData] = await Promise.all([
+      fetchDonations("user123"),
+      fetchCustomers(),
+    ]);
+
+    // let d = donationsData.map((donation) => {
+    //   if (donation.customer_id) {
+       
+    //     const customer = customersData.find(
+    //       (c) => c.id === donation.customer_id
+    //     );
+
+    //     let c = {
+    //       ...donation,
+    //       ...customer,
+    //     };
+    //     return {
+    //       ...donation,
+    //       ...customer,
+    //     };
+    //   }
+    //   return donation;
+    // });
+
+    // Map customers to donations
+    donations.value = donationsData.map((donation) => {
+      if (donation.customer_id) {
+        const customer = customersData.find(
+          (c) => c.id === donation.customer_id
+        );
+        let d= {
+          ...donation,
+          ...customer,
+        };
+        return {
+          d
+        };
+      }
+      return donation;
+    });
+   
+
+    await applyFilters();
+  } catch (error) {
+    console.error("Error loading donations:", error);
+    const toast = useToast();
+    toast.add({
+      title: "Error",
+      description: "Failed to load donations. Please try again.",
+      color: "red",
+    });
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+
+// const loadDonations = async () => {
+//   isLoading.value = true;
+//   try {
+//     // Load both donations and customers data
+//     const [donationsData, customersData] = await Promise.all([
+//       fetchDonations("user123"),
+//       fetchCustomers()
+//     ]);
+    
+//     // Create a map of customers for faster lookup
+//     const customersMap = new Map(
+//       customersData.map(customer => [customer.id, customer])
+//     );
+//     console.log("donationsData:", donationsData, customersData)
+
+//     // Merge customer data with donations
+//     donations.value = donationsData.map(donation => {
+//       if (donation.customer_id) {
+//         const customer = customersMap.get(donation.customer_id);
+//         if (customer) {
+//           return {
+//             ...donation,
+//             customer: {
+//               ...customer,
+//               // Add any computed fields here if needed
+//               age: calculateAge(customer.dateOfBirth)
+//             }
+//           };
+//         }
+//       }
+//       return donation;
+//     });
+
+//     await applyFilters();
+//   } catch (error) {
+//     console.error("Error loading donations:", error);
+//     const toast = useToast();
+//     toast.add({
+//       title: "Error",
+//       description: "Failed to load donations. Please try again.",
+//       color: "red"
+//     });
+//   } finally {
+//     isLoading.value = false;
+//   }
+// };
+
+// Modified applyFilters to include customer filtering
+// const applyFilters = async () => {
+//   isLoading.value = true;
+//   try {
+//     const filterParams = {
+//       startDate: filters.value.startDate,
+//       endDate: filters.value.endDate,
+//       taxType: { value: filters.value.taxType },
+//       collector_name: { value: filters.value.collector },
+//     };
+
+//     let results = await fetchDonationsByFilter("user123", filterParams);
+
+//     // Apply customer-specific filters
+//     if (
+//       filters.value.ghanaCard ||
+//       filters.value.minAge ||
+//       filters.value.maxAge
+//     ) {
+//       results = results.filter((donation) => {
+//         if (!donation.customer) return false;
+
+//         // Ghana Card filter
+//         if (filters.value.ghanaCard) {
+//           const searchCard = filters.value.ghanaCard.toLowerCase();
+//           if (!donation.customer.ghanaCard.toLowerCase().includes(searchCard)) {
+//             return false;
+//           }
+//         }
+
+//         // Age range filter
+//         if (filters.value.minAge || filters.value.maxAge) {
+//           const age = calculateAge(donation.customer.dateOfBirth);
+
+//           if (filters.value.minAge && age < parseInt(filters.value.minAge)) {
+//             return false;
+//           }
+
+//           if (filters.value.maxAge && age > parseInt(filters.value.maxAge)) {
+//             return false;
+//           }
+//         }
+
+//         return true;
+//       });
+//     }
+
+//     // Apply text search filter
+//     if (filters.value.search) {
+//       const searchTerm = filters.value.search.toLowerCase();
+//       results = results.filter(
+//         (item) =>
+//           item.name?.toLowerCase().includes(searchTerm) ||
+//           item.taxType?.toLowerCase().includes(searchTerm) ||
+//           item.collector_name?.toLowerCase().includes(searchTerm) ||
+//           item.contact?.includes(searchTerm) ||
+//           item.customer?.ghanaCard.toLowerCase().includes(searchTerm)
+//       );
+//     }
+
+//     // Sort by date descending
+//     results.sort((a, b) => new Date(b.date) - new Date(a.date));
+//     filteredDonations.value = results;
+//     currentPage.value = 1;
+//   } catch (error) {
+//     console.error("Error applying filters:", error);
+//     const toast = useToast();
+//     toast.add({
+//       title: "Error",
+//       description: "Failed to apply filters. Please try again.",
+//       color: "red",
+//     });
+//   } finally {
+//     isLoading.value = false;
+//   }
+// };
+
+const applyFilters = async () => {
+    isLoading.value = true;
+    try {
+        // Get base data with customer information already included
+        const results = await fetchDonationsByFilter("user123", {
+            startDate: filters.value.startDate,
+            endDate: filters.value.endDate
+        });
+        console.log("🚀 ~ applyFilters ~ results:", results)
+
+        // Apply client-side filters
+        let filteredResults = results;
+
+        // Tax Type filter
+        if (filters.value.taxType) {
+            filteredResults = filteredResults.filter(item => 
+                item.taxType?.toLowerCase() === filters.value.taxType.toLowerCase()
+            );
+        }
+
+        // Collector filter
+        if (filters.value.collector) {
+            filteredResults = filteredResults.filter(item => 
+                item.collector_name?.toLowerCase() === filters.value.collector.toLowerCase()
+            );
+        }
+
+        // Customer filters
+        if (filters.value.ghanaCard) {
+            filteredResults = filteredResults.filter(item => 
+                item.customer?.ghanaCard?.toLowerCase().includes(filters.value.ghanaCard.toLowerCase())
+            );
+        }
+
+        if (filters.value.minAge || filters.value.maxAge) {
+            filteredResults = filteredResults.filter(item => {
+                if (!item.customer?.age) return false;
+                if (filters.value.minAge && item.customer.age < parseInt(filters.value.minAge)) return false;
+                if (filters.value.maxAge && item.customer.age > parseInt(filters.value.maxAge)) return false;
+                return true;
+            });
+        }
+
+        // Text search filter
+        if (filters.value.search) {
+            const searchTerm = filters.value.search.toLowerCase();
+            filteredResults = filteredResults.filter(item =>
+                item.name?.toLowerCase().includes(searchTerm) ||
+                item.taxType?.toLowerCase().includes(searchTerm) ||
+                item.collector_name?.toLowerCase().includes(searchTerm) ||
+                item.contact?.includes(searchTerm) ||
+                item.customer?.ghanaCard?.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        // Sort by date descending
+        filteredResults.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Update state
+        filteredDonations.value = filteredResults;
+        currentPage.value = 1;
+
+    } catch (error) {
+        console.error("Error applying filters:", error);
+        const toast = useToast();
+        toast.add({
+            title: "Error",
+            description: "Failed to apply filters. Please try again.",
+            color: "red"
+        });
+    } finally {
+        isLoading.value = false;
+    }
+};
 </script>
