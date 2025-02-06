@@ -38,11 +38,11 @@
           </div>
           
           <!-- PIN Input -->
-          <div class="space-x-4 mb-10">
+          <div class="space-x-2 mb-10">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Passcode
             </label>
-            <span class="flex justify-end space-x-8">
+            <span class="flex justify-end space-x-4">
             <input
               v-for="(digit, index) in 4"
               :key="index"
