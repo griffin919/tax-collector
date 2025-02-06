@@ -109,6 +109,99 @@ export const useRealtimeDB = () => {
             isLoading.value = false;
         }
     };
+
+    const fetchDonationsByLoggedInUser = async (userId, startDate, endDate) => {
+        isLoading.value = true;
+        error.value = null;
+    
+        try {
+            // Get current user
+            const userPin = localStorage.getItem('user_pin');
+            if (!userPin) {
+                throw new Error('No user logged in');
+            }
+    
+            // Fetch user details
+            const { fetchLoggedInUser } = useSettingsDB();
+            const currentUser = await fetchLoggedInUser(userPin);
+            if (!currentUser) {
+                throw new Error('User not found');
+            }
+    
+            // Get donations and customers data in parallel
+            const [donationsSnapshot, customersSnapshot] = await Promise.all([
+                get(dbRef($database, `donations/${userId}`)),
+                get(dbRef($database, 'customers'))
+            ]);
+    
+            if (!donationsSnapshot.exists()) {
+                return [];
+            }
+    
+            // Create customers map for efficient lookup
+            const customersMap = new Map();
+            if (customersSnapshot.exists()) {
+                customersSnapshot.forEach((childSnapshot) => {
+                    customersMap.set(childSnapshot.key, {
+                        id: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+            }
+    
+            // Convert date strings to Date objects for comparison
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+            if (start) start.setHours(0, 0, 0, 0);
+            if (end) end.setHours(23, 59, 59, 999);
+    
+            // Process donations
+            let donationsArray = [];
+            donationsSnapshot.forEach((childSnapshot) => {
+                const donation = {
+                    id: childSnapshot.key,
+                    ...childSnapshot.val()
+                };
+    
+                // Filter by collector name if not admin
+                if (currentUser.role !== 'Admin' && donation.collector_name !== currentUser.username) {
+                    return;
+                }
+    
+                // Apply date filter if dates are provided
+                if (start && end) {
+                    const donationDate = new Date(donation.date);
+                    if (donationDate < start || donationDate > end) {
+                        return;
+                    }
+                }
+    
+                // Add customer data if available
+                if (donation.customer_id && customersMap.has(donation.customer_id)) {
+                    const customer = customersMap.get(donation.customer_id);
+                    donation.customer = {
+                        ...customer,
+                        age: calculateAge(customer.dateOfBirth)
+                    };
+                }
+    
+                donationsArray.push(donation);
+            });
+    
+            // Sort by date descending
+            donationsArray.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+            return donationsArray;
+    
+        } catch (err) {
+            console.error('Error fetching user donations:', err);
+            error.value = err.message || 'Failed to fetch donations';
+            throw err;
+        } finally {
+            isLoading.value = false;
+        }
+    };
+    
     
     // Helper function for age calculation
     const calculateAge = (dateOfBirth) => {
@@ -185,6 +278,7 @@ export const useRealtimeDB = () => {
         recordDonation,
         deleteDonation,
         updateDonation,
-        fetchDonationsByFilter
+        fetchDonationsByFilter,
+        fetchDonationsByLoggedInUser
     }
 }
