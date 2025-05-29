@@ -133,7 +133,7 @@ export const useUtils = () => {
       textToBytes(''),
       COMMANDS.BOLD_ON,
       textToBytes('NJSMA'),
-      textToBytes('PAYMENT RECEIPT'),
+      textToBytes('PROPERTY RECEIPT'),
       COMMANDS.BOLD_OFF,
       textToBytes(separator),
       textToBytes(`Receipt #: ${donationData.payment_id.slice(0, 8)}`),
@@ -160,7 +160,7 @@ export const useUtils = () => {
 
     return `
                 NJSMA
-                   PAYMENT RECEIPT
+                   TAX RECEIPT
 ${separator}
 Receipt #: ${donationData.payment_id.slice(0, 8)}
 Date: ${formatDate(donationData.date)}, ${new Date().toLocaleTimeString()}
@@ -208,7 +208,7 @@ ${separator}
       for (let i = 0; i < receiptData.length; i += chunkSize) {
         const chunk = receiptData.slice(i, i + chunkSize);
         await characteristic.writeValue(chunk);
-      } return true;
+      }      return true;
     } catch (error) {
       console.error('Bluetooth printing failed:', error);
       throw error;
@@ -216,23 +216,23 @@ ${separator}
   };
 
   // Main print function
-  const printReceipt = async (donationData, logoUrl = null, method = 'auto') => {
-    try {
-      // Priority order: USB first, then browser fallback, then Bluetooth last
-      if (method === 'usb' || (method === 'auto' && 'serial' in navigator)) {
-        const receiptData = await createReceiptContent(donationData, logoUrl);
-        return await printViaUSB(receiptData);
-      } else if (method === 'bluetooth') {
-        const receiptData = await createReceiptContent(donationData, logoUrl);
-        return await printViaBluetooth(receiptData);
-      } else {
-        // Browser print fallback - use text-only version
-        const textReceipt = createTextReceipt(donationData);
-        const printWindow = window.open('', 'Print Receipt', 'height=600,width=400');
-        printWindow.document.write(`
+    const printReceipt = async (donationData, logoUrl = null, method = 'auto') => {
+      try {
+        // Priority order: USB first, then browser fallback, then Bluetooth last
+        if (method === 'usb' || (method === 'auto' && 'serial' in navigator)) {
+          const receiptData = await createReceiptContent(donationData, logoUrl);
+          return await printViaUSB(receiptData);
+        } else if (method === 'bluetooth') {
+          const receiptData = await createReceiptContent(donationData, logoUrl);
+          return await printViaBluetooth(receiptData);
+        } else {
+          // Browser print fallback - use text-only version
+          const textReceipt = createTextReceipt(donationData);
+          const printWindow = window.open('', 'Print Receipt', 'height=600,width=400');
+          printWindow.document.write(`
           <html>
             <head>
-              <title>Payment Receipt</title>
+              <title>Tax Receipt</title>
               <style>
                 body {
                   font-family: 'Courier New', monospace;
@@ -275,18 +275,19 @@ ${separator}
             </body>
           </html>
         `);
-        printWindow.document.close();
-        return true;
+          printWindow.document.close();
+          return true;
+        }
+      } catch (error) {
+        console.error('Printing failed:', error);
+        return false;
       }
-    } catch (error) {
-      console.error('Printing failed:', error);
-      return false;
-    }
-  };
+    };
 
-  return {
-    formatCurrency,
-    formatDate,
-    printReceipt
+    return {
+      formatCurrency,
+      formatDate,
+      printReceipt
+    };
   };
-};
+  
