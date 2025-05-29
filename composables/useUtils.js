@@ -1,19 +1,4 @@
 export const useUtils = () => {
-  // Printer-specific commands for PT-210
-  const COMMANDS = {
-    INIT: new Uint8Array([0x1B, 0x40]), // Initialize printer
-    LINE_FEED: new Uint8Array([0x0A]), // Line feed
-    ALIGN_CENTER: new Uint8Array([0x1B, 0x61, 0x01]), // Center alignment
-    ALIGN_LEFT: new Uint8Array([0x1B, 0x61, 0x00]), // Left alignment
-    BOLD_ON: new Uint8Array([0x1B, 0x45, 0x01]), // Bold on
-    BOLD_OFF: new Uint8Array([0x1B, 0x45, 0x00]), // Bold off
-    PAPER_CUT: new Uint8Array([0x1D, 0x56, 0x41]), // Full cut
-    CHAR_SIZE_NORMAL: new Uint8Array([0x1D, 0x21, 0x00]), // Normal size text
-    CHAR_SIZE_DOUBLE: new Uint8Array([0x1D, 0x21, 0x11]), // Double size text
-    // Add image-related commands
-    IMAGE_START: new Uint8Array([0x1D, 0x76, 0x30, 0x00]), // Start image data
-  };
-
   // Helper function to format currency
 const formatCurrency = (amount) => {
   if(!amount) return '0.00';
@@ -40,10 +25,16 @@ const formatCurrency = (amount) => {
     });
     return result;
   };
-
-  // Convert text to printer-encoded bytes
+  // Convert text to printer-encoded bytes (ASCII for thermal printers)
   const textToBytes = (text) => {
-    return new TextEncoder().encode(text + '\n');
+    // Use ASCII encoding instead of UTF-8 for better thermal printer compatibility
+    const asciiText = text.replace(/[^\x00-\x7F]/g, '?'); // Replace non-ASCII chars
+    const bytes = new Uint8Array(asciiText.length + 1);
+    for (let i = 0; i < asciiText.length; i++) {
+      bytes[i] = asciiText.charCodeAt(i);
+    }
+    bytes[asciiText.length] = 0x0A; // Line feed
+    return bytes;
   };
 
   // New function to process image for thermal printer
@@ -133,8 +124,8 @@ const formatCurrency = (amount) => {
       ...(logoImage.length > 0 ? [logoImage, COMMANDS.LINE_FEED] : []),
       textToBytes(''),
       COMMANDS.BOLD_ON,
-      textToBytes('Accra Metro Assembly'),
-      textToBytes('TAX RECEIPT'),
+      textToBytes('NJSMA'),
+      textToBytes('PAYMENT RECEIPT'),
       COMMANDS.BOLD_OFF,
       textToBytes(separator),
       textToBytes(`Receipt #: ${donationData.payment_id.slice(0, 8)}`),
@@ -151,119 +142,92 @@ const formatCurrency = (amount) => {
     ];
 
     return concatenateUint8Arrays(...receipt);
-  };
-
-  // Print via Web Serial API (USB)
-  const printViaUSB = async (receiptData) => {
+  };  // Browser print function
+  const printReceipt = async (donationData, logoUrl = null) => {
     try {
-      const port = await navigator.serial.requestPort();
-      await port.open({ baudRate: 9600 }); // PT-210 default baud rate
+      const lineWidth = 32;
+      const separator = '-'.repeat(lineWidth);
+      const currentYear = new Date().getFullYear();
       
-      const writer = port.writable.getWriter();
-      await writer.write(receiptData);
-      await writer.close();
-      return true;
-    } catch (error) {
-      console.error('USB printing failed:', error);
-      throw error;
-    }
-  };
+      const receiptText = `NJSMA 
+PAYMENT RECEIPT
+${separator}
+Receipt #: ${donationData.payment_id.slice(0, 8)}
+${formatDate(donationData.date)}, ${new Date().toLocaleTimeString()}
+Name: ${donationData.name}
+Contact: ${donationData.contact}
+Amount: GHS ${formatCurrency(donationData.amount)}
+Tax Type: ${donationData.taxType}
 
-  // Print via Web Bluetooth API
-  const printViaBluetooth = async (receiptData) => {
-    try {
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [
-          { namePrefix: 'PT-210' },
-          { services: ['000018f0-0000-1000-8000-00805f9b34fb'] } // Generic printer service UUID
-        ]
-      });
+${currentYear} Rigel Inc, Accra`;
       
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-      const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-      
-      // Send data in chunks (PT-210 typically supports 20 bytes per packet)
-      const chunkSize = 20;
-      for (let i = 0; i < receiptData.length; i += chunkSize) {
-        const chunk = receiptData.slice(i, i + chunkSize);
-        await characteristic.writeValue(chunk);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Bluetooth printing failed:', error);
-      throw error;
-    }
-  };  // Main print function
-  const printReceipt = async (donationData, logoUrl = null, method = 'auto') => {
-    try {
-      const receiptData = await createReceiptContent(donationData, logoUrl);
-
-      // Priority order: USB first, then browser fallback, then Bluetooth last
-      if (method === 'usb' || (method === 'auto' && 'serial' in navigator)) {
-        return await printViaUSB(receiptData);
-      } else if (method === 'browser' || (method === 'auto' && !('bluetooth' in navigator))) {
-        // Browser print fallback
-        const receipt = new TextDecoder().decode(receiptData);
-        const printWindow = window.open('', 'Print Receipt', 'height=600,width=300');
-        printWindow.document.write(`
-          <html>
-            <head>
-              <style>
-                pre {
-                  font-family: monospace;
-                  white-space: pre;
-                  margin: 0;
-                  padding: 20px;
-                }
-                img {
-                  max-width: 100%;
-                  height: auto;
-                }
-              </style>
-            </head>
-            <body>
+      const printWindow = window.open('', 'Print Receipt', 'height=600,width=400');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Tax Receipt</title>
+            <style>
+              @media print {
+                body { margin: 0; }
+                .no-print { display: none; }
+              }
+              body {
+                font-family: 'Courier New', monospace;
+                margin: 20px;
+                text-align: center;
+                background: white;
+                color: black;
+              }
+              .receipt {
+                white-space: pre-line;
+                line-height: 1.4;
+                max-width: 300px;
+                margin: 0 auto;
+                padding: 20px;
+                border: 1px solid #ccc;
+              }
+              img {
+                max-width: 120px;
+                height: auto;
+                margin-bottom: 15px;
+              }
+              .print-btn {
+                margin: 20px;
+                padding: 10px 20px;
+                background: #007cba;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+              }
+              .print-btn:hover {
+                background: #005a8a;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="no-print">
+              <button class="print-btn" onclick="window.print()">Print Receipt</button>
+            </div>
+            <div class="receipt">
               ${logoUrl ? `<img src="${logoUrl}" alt="Logo">` : ''}
-              <pre>${receipt}</pre>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
+              ${receiptText}
+            </div>
+            <div class="no-print">
+              <button class="print-btn" onclick="window.close()">Close</button>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      
+      // Auto print after a short delay
+      setTimeout(() => {
         printWindow.print();
-        return true;
-      } else if (method === 'bluetooth' || (method === 'auto' && 'bluetooth' in navigator)) {
-        return await printViaBluetooth(receiptData);
-      } else {
-        // Final fallback to browser print
-        const receipt = new TextDecoder().decode(receiptData);
-        const printWindow = window.open('', 'Print Receipt', 'height=600,width=300');
-        printWindow.document.write(`
-          <html>
-            <head>
-              <style>
-                pre {
-                  font-family: monospace;
-                  white-space: pre;
-                  margin: 0;
-                  padding: 20px;
-                }
-                img {
-                  max-width: 100%;
-                  height: auto;
-                }
-              </style>
-            </head>
-            <body>
-              ${logoUrl ? `<img src="${logoUrl}" alt="Logo">` : ''}
-              <pre>${receipt}</pre>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-        return true;
-      }
+      }, 500);
+      
+      return true;
     } catch (error) {
       console.error('Printing failed:', error);
       return false;
