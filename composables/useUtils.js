@@ -27,7 +27,7 @@ ${formatDate(donationData.date)}, ${new Date().toLocaleTimeString()}
 Name: ${donationData.name}
 Contact: ${donationData.contact}
 Amount: GHS ${formatCurrency(donationData.amount)}
-Tax Type: ${donationData.taxType}
+Payment Type: ${donationData.taxType}
 
 ${currentYear} Rigel Inc, Accra`;
         const printWindow = window.open('', 'Print Receipt', 'height=600,width=400');
@@ -41,7 +41,6 @@ ${currentYear} Rigel Inc, Accra`;
                 .no-print { display: none; }
                 .receipt { 
                   max-width: 58mm;
-                  max-height: 58mm;
                   font-size: 12px;
                   margin: 0;
                   padding: 5px;
