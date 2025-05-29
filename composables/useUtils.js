@@ -29,7 +29,7 @@ Contact: ${donationData.contact}
 Amount: GHS ${formatCurrency(donationData.amount)}
 Payment Type: ${donationData.taxType}
 
-${currentYear} Rigel Inc, Accra`;
+${currentYear} Rigelis Inc, Accra`;
         const printWindow = window.open('', 'Print Receipt', 'height=600,width=400');
       printWindow.document.write(`
         <html>
@@ -58,14 +58,14 @@ ${currentYear} Rigel Inc, Accra`;
                 line-height: 1.2;
                 max-width: 250px;
                 margin: 0 auto;
-                padding: 6px;
+                padding: 3px;
                 border: 1px solid #ccc;
                 font-size: 7px;
               }
               img {
                 max-width: 20px;
                 height: auto;
-                margin-bottom: 10px;
+                margin-bottom: 5px;
               }
               .print-btn {
                 margin: 20px;
