@@ -195,21 +195,47 @@ const formatCurrency = (amount) => {
       console.error('Bluetooth printing failed:', error);
       throw error;
     }
-  };
-
-  // Main print function
+  };  // Main print function
   const printReceipt = async (donationData, logoUrl = null, method = 'auto') => {
     try {
       const receiptData = await createReceiptContent(donationData, logoUrl);
 
-      
-      
-      if (method === 'bluetooth' || (method === 'auto' && 'bluetooth' in navigator)) {
-        return await printViaBluetooth(receiptData);
-      } else if (method === 'usb' || (method === 'auto' && 'serial' in navigator)) {
+      // Priority order: USB first, then browser fallback, then Bluetooth last
+      if (method === 'usb' || (method === 'auto' && 'serial' in navigator)) {
         return await printViaUSB(receiptData);
+      } else if (method === 'browser' || (method === 'auto' && !('bluetooth' in navigator))) {
+        // Browser print fallback
+        const receipt = new TextDecoder().decode(receiptData);
+        const printWindow = window.open('', 'Print Receipt', 'height=600,width=300');
+        printWindow.document.write(`
+          <html>
+            <head>
+              <style>
+                pre {
+                  font-family: monospace;
+                  white-space: pre;
+                  margin: 0;
+                  padding: 20px;
+                }
+                img {
+                  max-width: 100%;
+                  height: auto;
+                }
+              </style>
+            </head>
+            <body>
+              ${logoUrl ? `<img src="${logoUrl}" alt="Logo">` : ''}
+              <pre>${receipt}</pre>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+        return true;
+      } else if (method === 'bluetooth' || (method === 'auto' && 'bluetooth' in navigator)) {
+        return await printViaBluetooth(receiptData);
       } else {
-        // Fallback to browser print
+        // Final fallback to browser print
         const receipt = new TextDecoder().decode(receiptData);
         const printWindow = window.open('', 'Print Receipt', 'height=600,width=300');
         printWindow.document.write(`
