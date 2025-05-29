@@ -58,7 +58,7 @@ ${currentYear} Rigel Inc, Accra`;
                 line-height: 1.2;
                 max-width: 250px;
                 margin: 0 auto;
-                padding: 20px;
+                padding: 6px;
                 border: 1px solid #ccc;
                 font-size: 6px;
               }
