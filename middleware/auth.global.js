@@ -21,9 +21,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
             if (user) {
               if (user.role === 'Admin') {
-                resolve(navigateTo('/donate', { replace: true }))
+                resolve(navigateTo('/record', { replace: true }))
               } else {
-                resolve(navigateTo('/donations', { replace: true }))
+                resolve(navigateTo('/records', { replace: true }))
               }
               return
             } else {
@@ -61,9 +61,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
           // Admin can access all routes
           resolve()
         } else {
-          // Collector can only access /donations
-          if (to.path !== '/donations') {
-            resolve(navigateTo('/donations', { replace: true }))
+          // Collector can only access /records
+          if (to.path !== '/records') {
+            resolve(navigateTo('/records', { replace: true }))
             return
           }
           resolve()

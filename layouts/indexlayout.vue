@@ -17,7 +17,7 @@
         </span>
         <Icon name="lucide:heart-handshake" class="h-6 w-6 text-blue-500 pr-3" />
 
-        <span class="text-2xl font-bold text-gray-800">RevGh</span>
+        <span class="text-2xl font-bold text-gray-800">JacksonRev</span>
       </div>
       <div></div>
     </div>

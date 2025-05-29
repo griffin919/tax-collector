@@ -4,7 +4,7 @@
   >
     <div class="flex items-center">
       <Icon name="lucide:heart-handshake" class="h-6 w-6 text-blue-500 pr-3" />
-      <span class="text-2xl font-bold text-gray-800">RevGh</span>
+      <span class="text-2xl font-bold text-gray-800">JacksonRev</span>
     </div>
     
     <div class="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
@@ -148,9 +148,9 @@ const handleSubmit = async () => {
 
       // Redirect based on PIN
       if (pinCode === "5464") {
-        router.push("/donate"); // Admin goes to dashboard
+        router.push("/record"); // Admin goes to dashboard
       } else {
-        router.push("/donations"); // User goes to donations
+        router.push("/records"); // User goes to donations
       }
     } else {
       error.value = "Invalid PIN";

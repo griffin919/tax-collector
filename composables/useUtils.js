@@ -195,21 +195,18 @@ const formatCurrency = (amount) => {
       console.error('Bluetooth printing failed:', error);
       throw error;
     }
-  };
-
-  // Main print function
+  };  // Main print function
   const printReceipt = async (donationData, logoUrl = null, method = 'auto') => {
     try {
       const receiptData = await createReceiptContent(donationData, logoUrl);
 
-      
-      
-      if (method === 'bluetooth' || (method === 'auto' && 'bluetooth' in navigator)) {
-        return await printViaBluetooth(receiptData);
-      } else if (method === 'usb' || (method === 'auto' && 'serial' in navigator)) {
+      // Priority order: USB first, then browser fallback, then Bluetooth last
+      if (method === 'usb' || (method === 'auto' && 'serial' in navigator)) {
         return await printViaUSB(receiptData);
+      } else if (method === 'bluetooth') {
+        return await printViaBluetooth(receiptData);
       } else {
-        // Fallback to browser print
+        // Browser print fallback (used for 'browser' method or as final fallback in auto mode)
         const receipt = new TextDecoder().decode(receiptData);
         const printWindow = window.open('', 'Print Receipt', 'height=600,width=300');
         printWindow.document.write(`

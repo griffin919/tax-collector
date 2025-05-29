@@ -134,17 +134,17 @@
                   @update:modelValue="applyFilters"
                 />
               </div>
-            </div>
-
-            <!-- Mobile Date Range -->
+            </div>            <!-- Mobile Date Range -->
             <div class="flex gap-2">
               <UInput
                 v-model="filters.startDate"
                 type="date"
+                @update:modelValue="applyFilters"
               />
               <UInput
                 v-model="filters.endDate"
                 type="date"
+                @update:modelValue="applyFilters"
               />
               <button
                 @click="applyFilters"
@@ -205,16 +205,16 @@
               >
                 {{ collector.label }}
               </option>
-            </select>
-
-            <input
+            </select>            <input
               v-model="filters.startDate"
               type="date"
+              @change="applyFilters"
               class="w-40 px-2 py-1.5 text-sm border rounded"
             />
             <input
               v-model="filters.endDate"
               type="date"
+              @change="applyFilters"
               class="w-40 px-2 py-1.5 text-sm border rounded"
             />
 
@@ -534,7 +534,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { useDebounceFn } from "@vueuse/core";
@@ -675,12 +675,12 @@ const downloadPDF = () => {
 
 // Computed Properties
 const uniqueTaxTypes = computed(() => {
-  const types = [...new Set(donations.value.map((d) => d.taxType))];
+  const types = [...new Set(donations.value.map((d) => d.taxType).filter(Boolean))];
   return types.map((type) => ({ value: type, label: type }));
 });
 
 const uniqueCollectors = computed(() => {
-  const collectors = [...new Set(donations.value.map((d) => d.collector_name))];
+  const collectors = [...new Set(donations.value.map((d) => d.collector_name).filter(Boolean))];
   return collectors.map((collector) => ({
     value: collector,
     label: collector,
@@ -892,6 +892,11 @@ onUnmounted(() => {
   }
 });
 
+// Watch for itemsPerPage changes to reset pagination
+watch(itemsPerPage, () => {
+  currentPage.value = 1;
+});
+
 // Page Meta
 definePageMeta({
   title: "Payments Dashboard",
@@ -946,21 +951,21 @@ const loadDonations = async () => {
     //     };
     //   }
     //   return donation;
-    // });
-
-    // Map customers to donations
+    // });    // Map customers to donations
     donations.value = donationsData.map((donation) => {
       if (donation.customer_id) {
         const customer = customersData.find(
           (c) => c.id === donation.customer_id
         );
-        let d= {
-          ...donation,
-          ...customer,
-        };
-        return {
-          d
-        };
+        if (customer) {
+          return {
+            ...donation,
+            customer: {
+              ...customer,
+              age: calculateAge(customer.dateOfBirth)
+            }
+          };
+        }
       }
       return donation;
     });
@@ -1108,15 +1113,8 @@ const loadDonations = async () => {
 const applyFilters = async () => {
     isLoading.value = true;
     try {
-        // Get base data with customer information already included
-        const results = await fetchDonationsByFilter("user123", {
-            startDate: filters.value.startDate,
-            endDate: filters.value.endDate
-        });
-        console.log("🚀 ~ applyFilters ~ results:", results)
-
-        // Apply client-side filters
-        let filteredResults = results;
+        // Use the already loaded donations data instead of fetching again
+        let filteredResults = [...donations.value];
 
         // Tax Type filter
         if (filters.value.taxType) {
@@ -1144,6 +1142,19 @@ const applyFilters = async () => {
                 if (!item.customer?.age) return false;
                 if (filters.value.minAge && item.customer.age < parseInt(filters.value.minAge)) return false;
                 if (filters.value.maxAge && item.customer.age > parseInt(filters.value.maxAge)) return false;
+                return true;
+            });
+        }
+
+        // Date range filter
+        if (filters.value.startDate || filters.value.endDate) {
+            filteredResults = filteredResults.filter(item => {
+                const itemDate = new Date(item.date);
+                const startDate = filters.value.startDate ? new Date(filters.value.startDate) : null;
+                const endDate = filters.value.endDate ? new Date(filters.value.endDate + 'T23:59:59') : null;
+                
+                if (startDate && itemDate < startDate) return false;
+                if (endDate && itemDate > endDate) return false;
                 return true;
             });
         }
