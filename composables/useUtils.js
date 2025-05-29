@@ -40,7 +40,8 @@ ${currentYear} Rigel Inc, Accra`;
                 body { margin: 0; }
                 .no-print { display: none; }
                 .receipt { 
-                  max-width: 58mm; 
+                  max-width: 58mm;
+                  max-height: 58mm;
                   font-size: 12px;
                   margin: 0;
                   padding: 5px;
@@ -60,7 +61,7 @@ ${currentYear} Rigel Inc, Accra`;
                 margin: 0 auto;
                 padding: 6px;
                 border: 1px solid #ccc;
-                font-size: 6px;
+                font-size: 7px;
               }
               img {
                 max-width: 20px;
